@@ -14,7 +14,7 @@ def drawClusters(prediction, model, k, name):
     plt.figure(figsize=(13,8))  
     for i in range(0, k):
         lx, ly, lcluster = [], [], []
-        cluster_pre = prediction.select("features", "prediction").where(prediction.prediction==i)#.limit(200)
+        cluster_pre = prediction.select("features", "prediction").where(prediction.prediction==i).limit(200)
         for x, y in cluster_pre.collect():
             lx.append(x[0])
             ly.append(x[1])
