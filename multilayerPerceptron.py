@@ -1,7 +1,8 @@
+from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.functions import *
 from pyspark.ml.feature import StringIndexer, VectorAssembler
-from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 import datetime
 import numpy as np
 import pandas as pd
@@ -12,6 +13,7 @@ import sys
 
 spark = SparkSession.builder.appName("Cluster Crimes").getOrCreate()
 df = spark.read.csv(sys.argv[1], inferSchema=True, header=True)
+#df = spark.read.csv('sampled_data.csv', inferSchema=True, header=True)
 df = df.cache()
 aux = df.columns
 for it in aux:
@@ -66,8 +68,15 @@ indexed_features = ['%s_indexed' % fc['feature'] for fc in feature_level_count_d
 assembler = VectorAssembler(inputCols=indexed_features, outputCol='features')
 vectorized_df_dates = assembler.transform(df_dates_features)
 train, test = vectorized_df_dates.randomSplit([0.8, 0.2])
-algo = LogisticRegression(labelCol='primary_type_indexed', featuresCol='features', maxIter=50, family='multinomial')
+x = int(train.select('primary_type_indexed').distinct().count())
+y = int(test.select('primary_type_indexed').distinct().count())
+outputCnt = x if x > y else y
+layers = [len(selected_features), 128, 96, 64, outputCnt]
+algo = MultilayerPerceptronClassifier(labelCol='primary_type_indexed', featuresCol='features', maxIter=50, layers=layers, blockSize=128)
 fittedModel = algo.fit(train)
-evaluation_summary = fittedModel.evaluate(test)
-with open("logisticRegresion_acc.txt", "w") as f:
-    f.write(str(evaluation_summary.accuracy))
+
+result = fittedModel.transform(test)
+predictionAndLabels = result.select("prediction", "primary_type_indexed")
+evaluator = MulticlassClassificationEvaluator(metricName="accuracy", labelCol="primary_type_indexed")
+with open("multilayerPerceptron_acc.txt", "w") as f:
+    f.write(str(evaluator.evaluate(predictionAndLabels)))
