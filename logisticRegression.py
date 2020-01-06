@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import sys
+
 
 spark = SparkSession.builder.appName("Cluster Crimes").getOrCreate()
-df = spark.read.csv('sampled_data.csv', inferSchema=True, header=True)
+df = spark.read.csv(sys.argv[1], inferSchema=True, header=True)
 df = df.cache()
 aux = df.columns
 for it in aux:

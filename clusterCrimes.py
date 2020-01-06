@@ -6,6 +6,7 @@ from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.ml.linalg import Vectors
 from matplotlib import pyplot as plt
 from matplotlib import cm
+import sys
 
 
 def drawClusters(prediction, model, k, name):
@@ -38,7 +39,7 @@ def drawClusters(prediction, model, k, name):
 
 
 sparkConf = SparkSession.builder.appName("Cluster Crimes").getOrCreate()
-data = sparkConf.read.format("csv").option("header", "true").option("delimiter", ",").option("inferschema", "true").load("sampled_data.csv")
+data = sparkConf.read.format("csv").option("header", "true").option("delimiter", ",").option("inferschema", "true").load(sys.argv[1])
 data = data.cache()
 
 data = data.withColumnRenamed('X Coordinate', 'xcoord')
